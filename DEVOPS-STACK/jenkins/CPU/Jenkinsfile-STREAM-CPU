@@ -1,0 +1,32 @@
+pipeline {
+    agent { label 'cpu'}
+
+    stages {
+        stage('HOME DIR') {
+            steps {
+                sh 'echo $PWD'
+            }
+        }
+         stage('execute STREAM Benchmark') {
+            steps {
+                sh '''
+                    module load ReFrame/4.6.2-Python-3.6
+                    reframe --version
+                    TEST_DIR=$HOME/regression-tests
+                    REPORTS_DIR=$HOME/reports
+                    python3 ${TEST_DIR}/read.py stream.py
+                   '''
+            }
+        }
+        stage('Report Copy') {
+            steps {
+                sh '''
+                    scp -rp /home/karim.bezine-ext/reports amir.jribi-ext@toubkal-jenkins-01:/home/karim.bezine-ext
+                    cp -r $HOME/reports/* $HOME/archive
+                    rm -rf $HOME/reports/*
+                    ssh -tt toubkal-jenkins-01 'sudo mv /home/karim.bezine-ext/reports/* /opt/devops-stack/logstash/data'
+                    '''
+            }
+        }
+    }
+}
