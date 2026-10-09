@@ -1,0 +1,33 @@
+pipeline {
+    agent { label 'gpu'}
+
+    stages {
+        stage('HOME DIR') {
+            steps {
+                sh 'echo $PWD'
+            }
+        }
+         stage('execute HPL Benchmark') {
+            steps {
+                sh '''
+                    module load cpu_cclake/ReFrame/4.6.2-Python-3.6
+                    reframe --version
+                    TEST_DIR=$HOME/lustre/sw_stack-373lcd9r8io/users/karim.bezine-ext/src/reframe/redx_tests
+                    python3 ${TEST_DIR}/read.py stream_h100.py
+                   '''
+            }
+        }
+        stage('Report Copy') {
+            steps {
+                sh  '''
+                    REPORTS_DIR=$HOME/lustre/sw_stack-373lcd9r8io/users/karim.bezine-ext/src/reframe/reports/
+                    scp -rp $REPORTS_DIR karim.bezine-ext@toubkal-jenkins-01:/home/karim.bezine-ext
+                    cp -r $REPORTS_DIR/* $HOME/archive
+                    rm -rf $REPORTS_DIR/*
+                    ssh -tt toubkal-jenkins-01 'sudo mv /home/karim.bezine-ext/reports/* /opt/devops-stack/logstash/data && sudo chmod -R 777 /opt/devops-stack/logstash/data'
+                    '''
+            }
+        }
+    }
+}
+
